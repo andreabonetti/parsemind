@@ -1,4 +1,3 @@
-
 import copy
 import json
 from datetime import datetime, timedelta
@@ -63,7 +62,7 @@ def get_msg_by_date_range(
 def get_scholar_text(msg):
     headers = {h["name"]: h["value"] for h in msg["payload"]["headers"]}
     subject = headers.get("Subject", "(No Subject)")
-    sender = headers.get("From", "(No Sender)")
+    # sender = headers.get("From", "(No Sender)")
     snippet = msg.get("snippet", "")
 
     # postprocessing of subject
