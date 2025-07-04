@@ -1,0 +1,16 @@
+[project]
+name = "parsemind"
+version = "0.0.1"
+description = "ParseMind is an LLM-powered tool that parses and summarizes newsletters into clean, concise insights."
+readme = "README.md"
+authors = [
+    { name = "Andrea Bonetti", email = "andrea.bonetti@alumni.epfl.ch" }
+]
+dependencies = []
+
+[tool.ruff]
+select = ["E", "F", "I", "B"]
+line-length = 100
+
+[tool.setuptools]
+py-modules = ["parsemind"]
