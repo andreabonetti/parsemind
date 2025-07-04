@@ -2,9 +2,10 @@
 
 from parsemind import call_gmail_api, get_labels
 
-service = call_gmail_api()
-labels = get_labels(service)
+if __name__ == "__main__":
+    service = call_gmail_api()
+    labels = get_labels(service)
 
-print("Labels in your Gmail account:")
-for label in labels:
-    print(f"\t{label['name']}")
+    print("Labels in your Gmail account:")
+    for label in labels:
+        print(f"\t{label['name']}")
