@@ -15,8 +15,8 @@ import json
 
 
 def call_gmail_api(
-        token_file="token.json"
-        ):
+    token_file="credentials/token.json"
+):
     # If modifying these scopes, delete the file token.json.
     SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
     # Get credentials
