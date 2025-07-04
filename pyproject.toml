@@ -9,8 +9,10 @@ authors = [
 dependencies = []
 
 [tool.ruff]
-select = ["E", "F", "I", "B"]
+include = ["parsemind.py", "examples", "tests"]
 line-length = 100
+target-version = "py311"
 
-[tool.setuptools]
-py-modules = ["parsemind"]
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
