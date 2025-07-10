@@ -19,15 +19,10 @@ if __name__ == "__main__":
     weeks = get_weeks_after(reference_str)
 
     # select only the weeks of the editions that have not been generated yet
-    for i, dates in enumerate(weeks):
-        # name of the markdown edition
-        markdown_edition = get_markdown_edition(markdown_file, dates)
-
-        # check if file exists. If so, removes the date
-        markdown_edition_path = Path(output_folder) / markdown_edition
-        if markdown_edition_path.exists():
-            del weeks[i]
-
+    weeks = [
+        dates for dates in weeks
+        if not (Path(output_folder) / get_markdown_edition(markdown_file, dates)).exists()
+    ]
 
     # generate editions
     for dates in weeks:

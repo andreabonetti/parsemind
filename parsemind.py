@@ -295,6 +295,7 @@ def get_summary(
     markdown=False, # save summary as markdown
     output_folder='output',
     markdown_file='parsemind.md',
+    homepage_file='parsemind.md',
     # print
     do_print=False,
     # misc
@@ -307,6 +308,7 @@ def get_summary(
 
     # summary
     summary=f"# ParseMind: {dates['start_date']} ~ {dates['end_date']}\n\n"
+    summary += f"[Back to homepage.]({homepage_file})\n"
     if scholar:
         summary += get_scholar_summary(service=service, dates=dates, verbose=verbose, debug=debug)
 
