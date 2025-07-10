@@ -6,3 +6,6 @@ ParseMind is an LLM-powered tool that parses and summarizes newsletters into cle
 ```
 pip install -e .
 ```
+
+## Documentation
+- [todo](documentation/todo.md)

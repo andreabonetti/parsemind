@@ -158,10 +158,10 @@ def get_scholar_text(msg):
 
     # postprocessing of subject
     subject_improved = copy.deepcopy(subject)
-    subject_improved = subject_improved.replace(" - new articles", "")
-    subject_improved = subject_improved.replace(" - nuovi articoli", "")
+    subject_improved = subject_improved.replace(" - new articles", "") # english
+    subject_improved = subject_improved.replace(" - nuovi articoli", "") # italian
     subject_improved = subject_improved.replace(
-        "కర్రి రమేష్", ""
+        " కర్రి రమేష్", ""
     )  # keeping only English script of Ramesh Kerri
 
     # postprocessing of snippet
@@ -183,6 +183,31 @@ def get_today_and_week_ago():
     }
     return dates
 
+
+def get_weeks_after(date_str):
+    """Get full Monday–Sunday weeks after a given date, until today."""
+    format = "%Y-%m-%d"
+    start_date = datetime.strptime(date_str, format).date()
+    today = datetime.today().date()
+
+    # Move start_date to the next Monday if it's not already a Monday
+    days_to_next_monday = (7 - start_date.weekday()) % 7
+    if days_to_next_monday == 0:
+        next_monday = start_date
+    else:
+        next_monday = start_date + timedelta(days=days_to_next_monday)
+
+    weeks = []
+    current_start = next_monday
+    while current_start + timedelta(days=6) <= today:
+        current_end = current_start + timedelta(days=6)
+        weeks.append({
+            'start_date': current_start.strftime(format),
+            'end_date': current_end.strftime(format)
+        })
+        current_start += timedelta(days=7)
+
+    return weeks
 
 def get_scholar_summary(service, dates, verbose=False, debug=False):
     """Generate Google Scholar section of the summary"""
@@ -262,6 +287,7 @@ def get_scholar_summary(service, dates, verbose=False, debug=False):
 
 
 def get_summary(
+    dates,
     # summaries
     scholar=True,
     # markdown
@@ -277,9 +303,6 @@ def get_summary(
     """Generate the summary of the newsletters"""
     # call gmail api
     service = call_gmail_api()
-
-    # get dates
-    dates = get_today_and_week_ago()
 
     # summary
     summary=f"# ParseMind: {dates['start_date']} ~ {dates['end_date']}\n\n"
