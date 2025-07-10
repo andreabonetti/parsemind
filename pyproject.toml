@@ -9,9 +9,10 @@ authors = [
 dependencies = []
 
 [tool.ruff]
-include = ["parsemind.py", "examples", "tests"]
-line-length = 100
-target-version = "py311"
+line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B"]
+select = ["E", "F", "I"]
+
+[tool.ruff.format]
+quote-style = "single"
