@@ -12,6 +12,7 @@ from email.mime.text import MIMEText
 import subprocess
 from pathlib import Path
 
+
 # ================================================================================
 # gmail api
 # ================================================================================
@@ -37,7 +38,9 @@ def authorize_and_save_token(
     
     return creds
 
-def call_gmail_api(token_file="credentials/token.json"):
+def call_gmail_api(
+        token_file="credentials/token.json"
+    ):
     '''Call the Gmail API'''
     # If modifying these scopes, delete the file token.json.
     SCOPES = [
