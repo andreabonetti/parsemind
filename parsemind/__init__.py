@@ -168,6 +168,8 @@ def get_scholar_text(msg):
     # postprocessing of snippet
     snippet_improved = copy.deepcopy(snippet)
     snippet_improved = snippet_improved.replace("[PDF]", "")
+    snippet_improved = snippet_improved.replace("[HTML]", "")
+    snippet_improved = snippet_improved.replace("POSTER:", "")
     snippet_improved = snippet_improved.lstrip()
 
     return subject_improved, snippet_improved
@@ -261,12 +263,17 @@ def get_scholar_summary(service, dates, verbose=False, debug=False):
     Each bullet point reports the reference author in bold, the title, the complete list of authors, and additional information.
     Remove the complete list of authors and the additional information **after** the title of each bullet point.
     Keep the reference author and the title, as they are now.
+    Between the author and the title, write '(patent)' if the bullet point is a patent or '(paper)' if the bullet point is a paper.
 
     Example of input bullet point:
     - **Subhasish Mitra**: Generalized qed pre-silicon verification framework S Mitra, C BARRETT, CJ Trippel, S Chattopadhyay - US Patent App. 18/541722, 2025 Abstract Systems and methods of verifying a hardware processing
+    The output should be:
+    - **Subhasish Mitra** (patent): Generalized qed pre-silicon verification framework
 
-    Output should be:
-    - **Subhasish Mitra**: Generalized qed pre-silicon verification framework
+    Example of input bullet point:
+    - **Luca Benini***: RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects P Iff, B Bruggmann, B Morel, M Besta, L Benini… - Proceedings of the 22nd …, 2025
+    The output should be:
+    - **Luca Benini*** (paper): RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects
 
     Return the modified text without any comment or request from you.
     {scholar_text_before_llm}

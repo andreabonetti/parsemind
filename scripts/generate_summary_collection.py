@@ -36,7 +36,6 @@ if __name__ == "__main__":
             markdown=True,
             output_folder=output_folder,
             markdown_file=markdown_edition, # edition,
-            debug=True,
         )
 
     # update markdown homepage
