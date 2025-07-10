@@ -14,6 +14,10 @@ import base64
 from email.mime.text import MIMEText
 
 
+# ================================================================================
+# gmail api
+# ================================================================================
+
 def authorize_and_save_token(
     client_secret_path="credentials/client_secret.json",
     token_path="credentials/token.json"
@@ -49,6 +53,62 @@ def call_gmail_api(token_file="credentials/token.json"):
     # Return
     return service
 
+
+def create_message(
+    sender,
+    to,
+    subject,
+    body_text
+):
+    '''Create message'''
+    message = MIMEText(body_text)
+    message["to"] = to
+    message["from"] = sender
+    message["subject"] = subject
+    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    return {"raw": raw_message}
+
+
+def send_email(service, sender, to, subject, body):
+    '''Send email'''
+    message = create_message(sender, to, subject, body)
+    sent = service.users().messages().send(userId="me", body=message).execute()
+    return sent
+
+
+# ================================================================================
+# ollama
+# ================================================================================
+
+def ollama(
+    prompt: str,
+    model,  # 'gemma3:1b'
+):
+    # NOTE: you need to:
+    # - install in ollama the models that you need, like gemma3:1b
+    # - run `ollama serve` first in the terminal
+
+    # call ollama
+    response = requests.post(
+        "http://localhost:11434/api/generate", json={"model": model, "prompt": prompt}
+    )
+
+    # Parse NDJSON (newline-delimited JSON)
+    full_response = ""
+    for line in response.text.strip().splitlines():
+        if line.strip():
+            data = json.loads(line)
+            full_response += data.get("response", "")
+
+    # strip
+    response = full_response.strip()
+
+    return response
+
+
+# ================================================================================
+# parsemind
+# ================================================================================
 
 def get_labels(service):
     """Get a list of labels in the user's mailbox."""
@@ -113,52 +173,129 @@ def get_scholar_text(msg):
 
 
 def get_today_and_week_ago():
+    """Get dates of today and one week ago"""
     today = datetime.today().date()
     week_ago = today - timedelta(days=7)
-    return today.strftime("%Y-%m-%d"), week_ago.strftime("%Y-%m-%d")
+    format = "%Y-%m-%d"
+    dates = {
+        'start_date' : week_ago.strftime(format),
+        'end_date' : today.strftime(format)
+    }
+    return dates
 
 
-def ollama(
-    prompt: str,
-    model,  # 'gemma3:1b'
+def get_scholar_summary(service, dates, verbose=False, debug=False):
+    """Generate Google Scholar section of the summary"""
+    # select label
+    label = 'scholar'
+    label_id = get_label_id_by_name(service, label)
+
+    # gmail query
+    q = f"after:{dates['start_date']} before:{dates['end_date']}"
+
+    # get messages
+    if verbose: print('Scholar: Get messages...')
+    result = service.users().messages().list(
+        userId='me',
+        labelIds=[label_id],
+        q=q,
+        ).execute()
+    messages = result.get('messages', [])
+
+    # get subjects and snippets
+    if verbose: print('Scholar: Get subjects and snippets...')
+    scholar = []
+    for message in messages:
+        msg_id = message['id']
+        msg = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
+        [subject_improved, snippet_improved] = get_scholar_text(msg)
+        scholar.append([subject_improved, snippet_improved])
+
+    # scholar text
+    scholar_text=''
+    for s in scholar:
+        scholar_text += f"- **{s[0]}**: {s[1]}\n"
+
+    scholar_text_before_llm = copy.deepcopy(scholar_text)
+
+    # llm parsing with ollama
+    if verbose: print('Scholar: LLM parsing with ollama...')
+
+    if debug:
+        if verbose: print('Scholar: [DEBUG] Running with small LLM model')
+        model = 'gemma3:1b'
+    else:
+        model = 'gemma3:12b'
+
+    prompt = f"""
+    The text below is a bullet point list.
+    Each bullet point reports the reference author in bold, the title, the complete list of authors, and additional information.
+    Remove the complete list of authors and the additional information **after** the title of each bullet point.
+    Keep the reference author and the title, as they are now.
+
+    Example of input bullet point:
+    - **Subhasish Mitra**: Generalized qed pre-silicon verification framework S Mitra, C BARRETT, CJ Trippel, S Chattopadhyay - US Patent App. 18/541722, 2025 Abstract Systems and methods of verifying a hardware processing
+
+    Output should be:
+    - **Subhasish Mitra**: Generalized qed pre-silicon verification framework
+
+    Return the modified text without any comment or request from you.
+    {scholar_text_before_llm}
+    """
+    scholar_summary = ollama(prompt=prompt, model=model)
+
+    # add header
+    scholar_summary = '## Google Scholar\n' + scholar_summary
+
+    # space at the end
+    scholar_summary += '\n\n'
+
+    # debug
+    if debug:
+        print('Scholar: [DEBUG] scholar_text_before_llm')
+        print(scholar_text_before_llm)
+        print('Scholar: [DEBUG] scholar_summary')
+        print(scholar_summary)
+
+    # return
+    return scholar_summary
+
+
+def get_summary(
+    # summaries
+    scholar=True,
+    # markdown
+    markdown=False, # save summary as markdown
+    output_folder='output',
+    markdown_file='parsemind.md',
+    # print
+    do_print=False,
+    # misc
+    verbose=False,
+    debug=False,
 ):
-    # NOTE: you need to:
-    # - install in ollama the models that you need, like gemma3:1b
-    # - run `ollama serve` first in the terminal
+    """Generate the summary of the newsletters"""
+    # call gmail api
+    service = call_gmail_api()
 
-    # call ollama
-    response = requests.post(
-        "http://localhost:11434/api/generate", json={"model": model, "prompt": prompt}
-    )
+    # get dates
+    dates = get_today_and_week_ago()
 
-    # Parse NDJSON (newline-delimited JSON)
-    full_response = ""
-    for line in response.text.strip().splitlines():
-        if line.strip():
-            data = json.loads(line)
-            full_response += data.get("response", "")
+    # summary
+    summary=f"# ParseMind: {dates['start_date']}-{dates['end_date']}\n\n"
+    if scholar:
+        summary += get_scholar_summary(service=service, dates=dates, verbose=verbose, debug=debug)
+        print(summary)
 
-    # strip
-    response = full_response.strip()
+    # markdown
+    if markdown:
+        # Create folder if it doesn't exist
+        os.makedirs(output_folder, exist_ok=True)
+        # Create file if it doesn't exist
+        markdown_path = os.path.join(output_folder, markdown_file)
+        with open(markdown_path, "w") as f:
+            f.write(summary)
 
-    return response
-
-
-
-def create_message(
-    sender,
-    to,
-    subject,
-    body_text
-):
-    message = MIMEText(body_text)
-    message["to"] = to
-    message["from"] = sender
-    message["subject"] = subject
-    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
-    return {"raw": raw_message}
-
-def send_email(service, sender, to, subject, body):
-    message = create_message(sender, to, subject, body)
-    sent = service.users().messages().send(userId="me", body=message).execute()
-    return sent
+    # print
+    if print:
+        print(summary)
