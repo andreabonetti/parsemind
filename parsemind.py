@@ -1,18 +1,16 @@
 import copy
 import json
 from datetime import datetime, timedelta
-
 import requests
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google_auth_oauthlib.flow import InstalledAppFlow
-
 import os
-
 import base64
 from email.mime.text import MIMEText
-
+import subprocess
+from pathlib import Path
 
 # ================================================================================
 # gmail api
@@ -201,9 +199,12 @@ def get_weeks_after(date_str):
     current_start = next_monday
     while current_start + timedelta(days=6) <= today:
         current_end = current_start + timedelta(days=6)
+        start_date = current_start.strftime(format)
+        end_date = current_end.strftime(format)
         weeks.append({
-            'start_date': current_start.strftime(format),
-            'end_date': current_end.strftime(format)
+            'start_date': start_date,
+            'end_date': end_date,
+            'range_date': f"{start_date}_{end_date}"
         })
         current_start += timedelta(days=7)
 
@@ -321,3 +322,35 @@ def get_summary(
     # print
     if do_print:
         print(summary)
+
+
+def update_markdown_homepage(
+    output_folder='output',
+    markdown_file='parsemind.md',
+):
+    """Update markdown homepage"""
+    # Create folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+
+    # get list of markdown editions
+    folder = Path(output_folder)
+    files = [f.name for f in folder.iterdir() if f.is_file()]
+    files = [
+        f for f in files
+        if not (
+            f == markdown_file or
+            '_last_week.md' in f or
+            f == '.gitignore'
+        )
+    ]
+
+    # content
+    content = "# ParseMind\n"
+    for file in files:
+        file_wo_md = file.replace('.md','')
+        content += f"- [{file_wo_md}]({file})\n"
+
+    # write to file
+    markdown_path = os.path.join(output_folder, markdown_file)
+    with open(markdown_path, "w") as f:
+        f.write(content)
