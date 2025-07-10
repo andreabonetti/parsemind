@@ -251,7 +251,7 @@ def get_scholar_summary(service, dates, verbose=False, debug=False):
     scholar_summary += '\n\n'
 
     # debug
-    if debug:
+    if debug and verbose:
         print('Scholar: [DEBUG] scholar_text_before_llm')
         print(scholar_text_before_llm)
         print('Scholar: [DEBUG] scholar_summary')
@@ -282,10 +282,9 @@ def get_summary(
     dates = get_today_and_week_ago()
 
     # summary
-    summary=f"# ParseMind: {dates['start_date']}-{dates['end_date']}\n\n"
+    summary=f"# ParseMind: {dates['start_date']} ~ {dates['end_date']}\n\n"
     if scholar:
         summary += get_scholar_summary(service=service, dates=dates, verbose=verbose, debug=debug)
-        print(summary)
 
     # markdown
     if markdown:
@@ -297,5 +296,5 @@ def get_summary(
             f.write(summary)
 
     # print
-    if print:
+    if do_print:
         print(summary)
