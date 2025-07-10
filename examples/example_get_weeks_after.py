@@ -24,7 +24,7 @@ def main():
         print_vocab_recursively(week)
         print('')
 
-    return True # used for testing
+    return True # for testing
 
 
 if __name__ == "__main__":

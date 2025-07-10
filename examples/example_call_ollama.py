@@ -5,7 +5,7 @@
 from parsemind import ollama
 
 if __name__ == "__main__":
-    model = 'gemma3:4b'
+    model = 'gemma3:1b'
     prompt = 'Hi there!'
     response = ollama(prompt=prompt, model=model)
 
