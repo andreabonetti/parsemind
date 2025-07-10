@@ -6,11 +6,42 @@ import requests
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from google_auth_oauthlib.flow import InstalledAppFlow
 
+import os
+
+import base64
+from email.mime.text import MIMEText
+
+
+def authorize_and_save_token(
+    client_secret_path="credentials/client_secret.json",
+    token_path="credentials/token.json"
+):
+    '''Creates token.json'''
+    # Scopes: read and send
+    SCOPES = [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.send"
+    ]
+
+    # Start OAuth flow
+    flow = InstalledAppFlow.from_client_secrets_file(client_secret_path, SCOPES)
+    creds = flow.run_local_server(port=0)
+
+    # Save the new token
+    with open(token_path, "w") as token:
+        token.write(creds.to_json())
+    
+    return creds
 
 def call_gmail_api(token_file="credentials/token.json"):
+    '''Call the Gmail API'''
     # If modifying these scopes, delete the file token.json.
-    SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+    SCOPES = [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.send"
+    ]
     # Get credentials
     creds = Credentials.from_authorized_user_file(token_file, SCOPES)
     # Call the Gmail API
@@ -111,3 +142,23 @@ def ollama(
     response = full_response.strip()
 
     return response
+
+
+
+def create_message(
+    sender,
+    to,
+    subject,
+    body_text
+):
+    message = MIMEText(body_text)
+    message["to"] = to
+    message["from"] = sender
+    message["subject"] = subject
+    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    return {"raw": raw_message}
+
+def send_email(service, sender, to, subject, body):
+    message = create_message(sender, to, subject, body)
+    sent = service.users().messages().send(userId="me", body=message).execute()
+    return sent
