@@ -8,9 +8,9 @@ from pathlib import Path
 
 import requests
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+from google_auth_oauthlib.flow import InstalledAppFlow # type: ignore
+from googleapiclient.discovery import build # type: ignore
+from googleapiclient.errors import HttpError # type: ignore
 
 # ================================================================================
 # gmail api
@@ -86,9 +86,9 @@ def ollama(
             full_response += data.get('response', '')
 
     # strip
-    response = full_response.strip()
+    response_str = full_response.strip()
 
-    return response
+    return response_str
 
 
 # ================================================================================

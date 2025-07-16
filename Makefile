@@ -1,15 +1,28 @@
 .PHONY: all test pytest lint ruff clean requirements
 
+# ----- all -----
+
 all: lint test requirements
 
-test:
+# ----- test -----
+
+pytest:
 	pytest
 
-lint:
+test: pytest
+
+# ----- lint -----
+
+ruff:
 	ruff format
 	ruff check --fix
 
-ruff: lint
+mypy:
+	mypy .
+
+lint: ruff mypy
+
+# ----- misc -----
 
 requirements:
 	pip freeze > requirements.txt
