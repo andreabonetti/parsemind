@@ -12,7 +12,7 @@ lint:
 ruff: lint
 
 requirements:
-	pipreqs . --force
+	pip freeze > requirements.txt
 
 clean:
 	rm output/*.md
