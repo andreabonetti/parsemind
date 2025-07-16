@@ -74,7 +74,7 @@ orjson==3.10.18
 ormsgpack==1.10.0
 packaging==24.1
 pandocfilters==1.5.1
--e git+ssh://git@github.com/andreabonetti/parsemind.git@17cd4b36860698a215e92455533f485ed026d60c#egg=parsemind
+-e git+ssh://git@github.com/andreabonetti/parsemind.git@4ba1c1278119b0bf84ef92b35051b7eb11f8931f#egg=parsemind
 parso==0.8.4
 pathspec==0.12.1
 pexpect==4.9.0
