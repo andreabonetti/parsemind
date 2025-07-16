@@ -1,6 +1,6 @@
 .PHONY: all test pytest lint ruff clean requirements
 
-all: lint test freeze
+all: lint test requirements
 
 test:
 	pytest
