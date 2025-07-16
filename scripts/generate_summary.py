@@ -2,7 +2,7 @@
 
 from parsemind import get_summary
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     get_summary(
         scholar=True,
         markdown=True,

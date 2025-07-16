@@ -1,85 +1,71 @@
+import base64
 import copy
 import json
-from datetime import datetime, timedelta
-import requests
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from google_auth_oauthlib.flow import InstalledAppFlow
 import os
-import base64
+from datetime import datetime, timedelta
 from email.mime.text import MIMEText
-import subprocess
 from pathlib import Path
 
+import requests
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 # ================================================================================
 # gmail api
 # ================================================================================
 
-def authorize_and_save_token(
-    client_secret_path="credentials/client_secret.json",
-    token_path="credentials/token.json"
-):
-    '''Creates token.json'''
+
+def authorize_and_save_token(client_secret_path='credentials/client_secret.json', token_path='credentials/token.json'):
+    """Creates token.json"""
     # Scopes: read and send
-    SCOPES = [
-        "https://www.googleapis.com/auth/gmail.readonly",
-        "https://www.googleapis.com/auth/gmail.send"
-    ]
+    SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
 
     # Start OAuth flow
     flow = InstalledAppFlow.from_client_secrets_file(client_secret_path, SCOPES)
     creds = flow.run_local_server(port=0)
 
     # Save the new token
-    with open(token_path, "w") as token:
+    with open(token_path, 'w') as token:
         token.write(creds.to_json())
-    
+
     return creds
 
-def call_gmail_api(
-        token_file="credentials/token.json"
-    ):
-    '''Call the Gmail API'''
+
+def call_gmail_api(token_file='credentials/token.json'):
+    """Call the Gmail API"""
     # If modifying these scopes, delete the file token.json.
-    SCOPES = [
-        "https://www.googleapis.com/auth/gmail.readonly",
-        "https://www.googleapis.com/auth/gmail.send"
-    ]
+    SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
     # Get credentials
     creds = Credentials.from_authorized_user_file(token_file, SCOPES)
     # Call the Gmail API
-    service = build("gmail", "v1", credentials=creds)
+    service = build('gmail', 'v1', credentials=creds)
     # Return
     return service
 
 
-def create_message(
-    sender,
-    to,
-    subject,
-    body_text
-):
-    '''Create message'''
+def create_message(sender, to, subject, body_text):
+    """Create message"""
     message = MIMEText(body_text)
-    message["to"] = to
-    message["from"] = sender
-    message["subject"] = subject
+    message['to'] = to
+    message['from'] = sender
+    message['subject'] = subject
     raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
-    return {"raw": raw_message}
+    return {'raw': raw_message}
 
 
 def send_email(service, sender, to, subject, body):
-    '''Send email'''
+    """Send email"""
     message = create_message(sender, to, subject, body)
-    sent = service.users().messages().send(userId="me", body=message).execute()
+    sent = service.users().messages().send(userId='me', body=message).execute()
     return sent
 
 
 # ================================================================================
 # ollama
 # ================================================================================
+
 
 def ollama(
     prompt: str,
@@ -90,16 +76,14 @@ def ollama(
     # - run `ollama serve` first in the terminal
 
     # call ollama
-    response = requests.post(
-        "http://localhost:11434/api/generate", json={"model": model, "prompt": prompt}
-    )
+    response = requests.post('http://localhost:11434/api/generate', json={'model': model, 'prompt': prompt})
 
     # Parse NDJSON (newline-delimited JSON)
-    full_response = ""
+    full_response = ''
     for line in response.text.strip().splitlines():
         if line.strip():
             data = json.loads(line)
-            full_response += data.get("response", "")
+            full_response += data.get('response', '')
 
     # strip
     response = full_response.strip()
@@ -111,14 +95,15 @@ def ollama(
 # parsemind
 # ================================================================================
 
+
 def get_labels(service):
     """Get a list of labels in the user's mailbox."""
     try:
-        results = service.users().labels().list(userId="me").execute()
-        labels = results.get("labels", [])
+        results = service.users().labels().list(userId='me').execute()
+        labels = results.get('labels', [])
         return labels
     except HttpError as error:
-        print(f"An error occurred: {error}")
+        print(f'An error occurred: {error}')
         return None
 
 
@@ -127,8 +112,8 @@ def get_label_id_by_name(service, label_name):
     labels = get_labels(service)
     if labels:
         for label in labels:
-            if label["name"] == label_name:
-                return label["id"]
+            if label['name'] == label_name:
+                return label['id']
     return None
 
 
@@ -139,37 +124,30 @@ def get_msg_by_date_range(
     end_date,  # "2025-01-07"
     maxResults=500,  # apparently, 500 is the maximum allowed by Gmail API
 ):
-    query = f"after:{start_date} before:{end_date}"
+    query = f'after:{start_date} before:{end_date}'
     label_id = get_label_id_by_name(service, label_name)
-    result = (
-        service.users()
-        .messages()
-        .list(userId="me", labelIds=[label_id], maxResults=maxResults, q=query)
-        .execute()
-    )
-    messages = result.get("messages", [])
+    result = service.users().messages().list(userId='me', labelIds=[label_id], maxResults=maxResults, q=query).execute()
+    messages = result.get('messages', [])
     print(messages)
 
 
 def get_scholar_text(msg):
-    headers = {h["name"]: h["value"] for h in msg["payload"]["headers"]}
-    subject = headers.get("Subject", "(No Subject)")
+    headers = {h['name']: h['value'] for h in msg['payload']['headers']}
+    subject = headers.get('Subject', '(No Subject)')
     # sender = headers.get("From", "(No Sender)")
-    snippet = msg.get("snippet", "")
+    snippet = msg.get('snippet', '')
 
     # postprocessing of subject
     subject_improved = copy.deepcopy(subject)
-    subject_improved = subject_improved.replace(" - new articles", "") # english
-    subject_improved = subject_improved.replace(" - nuovi articoli", "") # italian
-    subject_improved = subject_improved.replace(
-        " కర్రి రమేష్", ""
-    )  # keeping only English script of Ramesh Kerri
+    subject_improved = subject_improved.replace(' - new articles', '')  # english
+    subject_improved = subject_improved.replace(' - nuovi articoli', '')  # italian
+    subject_improved = subject_improved.replace(' కర్రి రమేష్', '')  # keeping only English script of Ramesh Kerri
 
     # postprocessing of snippet
     snippet_improved = copy.deepcopy(snippet)
-    snippet_improved = snippet_improved.replace("[PDF]", "")
-    snippet_improved = snippet_improved.replace("[HTML]", "")
-    snippet_improved = snippet_improved.replace("POSTER:", "")
+    snippet_improved = snippet_improved.replace('[PDF]', '')
+    snippet_improved = snippet_improved.replace('[HTML]', '')
+    snippet_improved = snippet_improved.replace('POSTER:', '')
     snippet_improved = snippet_improved.lstrip()
 
     return subject_improved, snippet_improved
@@ -179,17 +157,14 @@ def get_today_and_week_ago():
     """Get dates of today and one week ago"""
     today = datetime.today().date()
     week_ago = today - timedelta(days=7)
-    format = "%Y-%m-%d"
-    dates = {
-        'start_date' : week_ago.strftime(format),
-        'end_date' : today.strftime(format)
-    }
+    format = '%Y-%m-%d'
+    dates = {'start_date': week_ago.strftime(format), 'end_date': today.strftime(format)}
     return dates
 
 
 def get_weeks_after(date_str):
     """Get full Monday–Sunday weeks after a given date, until today."""
-    format = "%Y-%m-%d"
+    format = '%Y-%m-%d'
     start_date = datetime.strptime(date_str, format).date()
     today = datetime.today().date()
 
@@ -206,14 +181,11 @@ def get_weeks_after(date_str):
         current_end = current_start + timedelta(days=6)
         start_date = current_start.strftime(format)
         end_date = current_end.strftime(format)
-        weeks.append({
-            'start_date': start_date,
-            'end_date': end_date,
-            'range_date': f"{start_date}_{end_date}"
-        })
+        weeks.append({'start_date': start_date, 'end_date': end_date, 'range_date': f'{start_date}_{end_date}'})
         current_start += timedelta(days=7)
 
     return weeks
+
 
 def get_scholar_summary(service, dates, verbose=False, debug=False):
     """Generate Google Scholar section of the summary"""
@@ -222,19 +194,26 @@ def get_scholar_summary(service, dates, verbose=False, debug=False):
     label_id = get_label_id_by_name(service, label)
 
     # gmail query
-    q = f"after:{dates['start_date']} before:{dates['end_date']}"
+    q = f'after:{dates["start_date"]} before:{dates["end_date"]}'
 
     # get messages
-    if verbose: print('Scholar: Get messages...')
-    result = service.users().messages().list(
-        userId='me',
-        labelIds=[label_id],
-        q=q,
-        ).execute()
+    if verbose:
+        print('Scholar: Get messages...')
+    result = (
+        service.users()
+        .messages()
+        .list(
+            userId='me',
+            labelIds=[label_id],
+            q=q,
+        )
+        .execute()
+    )
     messages = result.get('messages', [])
 
     # get subjects and snippets
-    if verbose: print('Scholar: Get subjects and snippets...')
+    if verbose:
+        print('Scholar: Get subjects and snippets...')
     scholar = []
     for message in messages:
         msg_id = message['id']
@@ -243,17 +222,19 @@ def get_scholar_summary(service, dates, verbose=False, debug=False):
         scholar.append([subject_improved, snippet_improved])
 
     # scholar text
-    scholar_text=''
+    scholar_text = ''
     for s in scholar:
-        scholar_text += f"- **{s[0]}**: {s[1]}\n"
+        scholar_text += f'- **{s[0]}**: {s[1]}\n'
 
     scholar_text_before_llm = copy.deepcopy(scholar_text)
 
     # llm parsing with ollama
-    if verbose: print('Scholar: LLM parsing with ollama...')
+    if verbose:
+        print('Scholar: LLM parsing with ollama...')
 
     if debug:
-        if verbose: print('Scholar: [DEBUG] Running with small LLM model')
+        if verbose:
+            print('Scholar: [DEBUG] Running with small LLM model')
         model = 'gemma3:1b'
     else:
         model = 'gemma3:12b'
@@ -302,7 +283,7 @@ def get_summary(
     # summaries
     scholar=True,
     # markdown
-    markdown=False, # save summary as markdown
+    markdown=False,  # save summary as markdown
     output_folder='output',
     markdown_file='parsemind.md',
     homepage_file='parsemind.md',
@@ -317,8 +298,8 @@ def get_summary(
     service = call_gmail_api()
 
     # summary
-    summary=f"# ParseMind: {dates['start_date']} ~ {dates['end_date']}\n\n"
-    summary += f"[Back to homepage.]({homepage_file})\n"
+    summary = f'# ParseMind: {dates["start_date"]} ~ {dates["end_date"]}\n\n'
+    summary += f'[Back to homepage.]({homepage_file})\n'
     if scholar:
         summary += get_scholar_summary(service=service, dates=dates, verbose=verbose, debug=debug)
 
@@ -328,7 +309,7 @@ def get_summary(
         os.makedirs(output_folder, exist_ok=True)
         # Create file if it doesn't exist
         markdown_path = os.path.join(output_folder, markdown_file)
-        with open(markdown_path, "w") as f:
+        with open(markdown_path, 'w') as f:
             f.write(summary)
 
     # print
@@ -347,22 +328,15 @@ def update_markdown_homepage(
     # get list of markdown editions
     folder = Path(output_folder)
     files = [f.name for f in folder.iterdir() if f.is_file()]
-    files = [
-        f for f in files
-        if not (
-            f == markdown_file or
-            '_last_week.md' in f or
-            f == '.gitignore'
-        )
-    ]
+    files = [f for f in files if not (f == markdown_file or '_last_week.md' in f or f == '.gitignore')]
 
     # content
-    content = "# ParseMind\n"
+    content = '# ParseMind\n'
     for file in files:
-        file_wo_md = file.replace('.md','')
-        content += f"- [{file_wo_md}]({file})\n"
+        file_wo_md = file.replace('.md', '')
+        content += f'- [{file_wo_md}]({file})\n'
 
     # write to file
     markdown_path = os.path.join(output_folder, markdown_file)
-    with open(markdown_path, "w") as f:
+    with open(markdown_path, 'w') as f:
         f.write(content)

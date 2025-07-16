@@ -2,10 +2,10 @@
 
 from parsemind import update_markdown_homepage
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # parameters
-    output_folder='output'
-    markdown_file='parsemind.md'
+    output_folder = 'output'
+    markdown_file = 'parsemind.md'
 
     # main
     update_markdown_homepage(

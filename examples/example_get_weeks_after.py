@@ -1,7 +1,9 @@
 """Get weeks after a certain date"""
 
-from parsemind import get_weeks_after
 from datetime import datetime, timedelta
+
+from parsemind import get_weeks_after
+
 
 def print_vocab_recursively(d, indent=0):
     """Recursively print a dictionary with indentation."""
@@ -16,7 +18,7 @@ def print_vocab_recursively(d, indent=0):
 
 def main():
     some_weeks_ago = datetime.today().date() - timedelta(days=21)
-    some_weeks_ago_str = some_weeks_ago.strftime("%Y-%m-%d")
+    some_weeks_ago_str = some_weeks_ago.strftime('%Y-%m-%d')
 
     weeks = get_weeks_after(some_weeks_ago_str)
 
@@ -24,8 +26,8 @@ def main():
         print_vocab_recursively(week)
         print('')
 
-    return True # for testing
+    return True  # for testing
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -4,13 +4,13 @@
 
 from parsemind import ollama
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     model = 'gemma3:1b'
     prompt = 'Hi there!'
     response = ollama(prompt=prompt, model=model)
 
     print('')
-    print(f"**Prompt:**\n{prompt}")
+    print(f'**Prompt:**\n{prompt}')
     print('')
-    print(f"**LLM:**\n{response}")
+    print(f'**LLM:**\n{response}')
     print('')

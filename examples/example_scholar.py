@@ -1,10 +1,6 @@
-from parsemind import call_gmail_api
-from parsemind import get_today_and_week_ago
-from parsemind import get_scholar_summary
+from parsemind import call_gmail_api, get_scholar_summary, get_today_and_week_ago
 
-import copy
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     # call gmail api
     service = call_gmail_api()
     # get dates
