@@ -17,10 +17,15 @@ from googleapiclient.errors import HttpError  # type: ignore
 # ================================================================================
 
 
-def authorize_and_save_token(client_secret_path='credentials/credentials.json', token_path='credentials/token.json'):
+def authorize_and_save_token(
+    client_secret_path='credentials/credentials.json', token_path='credentials/token.json'
+):
     """Creates token.json"""
     # Scopes: read and send
-    SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
+    SCOPES = [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+    ]
 
     # Start OAuth flow
     flow = InstalledAppFlow.from_client_secrets_file(client_secret_path, SCOPES)
@@ -36,7 +41,10 @@ def authorize_and_save_token(client_secret_path='credentials/credentials.json', 
 def call_gmail_api(token_file='credentials/token.json'):
     """Call the Gmail API"""
     # If modifying these scopes, delete the file token.json.
-    SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
+    SCOPES = [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+    ]
     # Get credentials
     creds = Credentials.from_authorized_user_file(token_file, SCOPES)
     # Call the Gmail API
@@ -109,7 +117,9 @@ def get_scholar_text(msg):
     subject_improved = copy.deepcopy(subject)
     subject_improved = subject_improved.replace(' - new articles', '')  # english
     subject_improved = subject_improved.replace(' - nuovi articoli', '')  # italian
-    subject_improved = subject_improved.replace(' కర్రి రమేష్', '')  # keeping only English script of Ramesh Kerri
+    subject_improved = subject_improved.replace(
+        ' కర్రి రమేష్', ''
+    )  # keeping only English script of Ramesh Kerri
 
     # postprocessing of snippet
     snippet_improved = copy.deepcopy(snippet)
@@ -119,6 +129,96 @@ def get_scholar_text(msg):
     snippet_improved = snippet_improved.lstrip()
 
     return subject_improved, snippet_improved
+
+
+# def get_messages_from_label_in_date_range(service, label: str, dates, verbose=False, debug=False):
+#     """Get messages from Gmail label within date range"""
+#     # select label
+#     label_id = get_label_id_by_name(service, label)
+
+#     # gmail query
+#     q = f'after:{dates["start_date"]} before:{dates["end_date"]}'
+
+#     # get messages
+#     if verbose:
+#         print('Scholar: Get messages...')
+#     result = (
+#         service.users()
+#         .messages()
+#         .list(
+#             userId='me',
+#             labelIds=[label_id],
+#             q=q,
+#         )
+#         .execute()
+#     )
+#     messages = result.get('messages', [])
+
+#     # get subjects and snippets
+#     if verbose:
+#         print('Scholar: Get subjects and snippets...')
+#     scholar = []
+#     for message in messages:
+#         msg_id = message['id']
+#         msg = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
+#         [subject_improved, snippet_improved] = get_scholar_text(msg)
+#         scholar.append([subject_improved, snippet_improved])
+
+#     # scholar text
+#     scholar_text = ''
+#     for s in scholar:
+#         scholar_text += f'- **{s[0]}**: {s[1]}\n'
+
+#     scholar_text_before_llm = copy.deepcopy(scholar_text)
+
+#     # llm parsing with ollama
+#     if verbose:
+#         print('Scholar: LLM parsing with ollama...')
+
+#     if debug:
+#         if verbose:
+#             print('Scholar: [DEBUG] Running with small LLM model')
+#         model = 'gemma3:1b'
+#     else:
+#         model = 'gemma3:12b'
+
+#     prompt = f"""
+#     The text below is a bullet point list.
+#     Each bullet point reports the reference author in bold, the title, the complete list of authors, and additional information.
+#     Remove the complete list of authors and the additional information **after** the title of each bullet point.
+#     Keep the reference author and the title, as they are now.
+#     Between the author and the title, write '(patent)' if the bullet point is a patent or '(paper)' if the bullet point is a paper.
+
+#     Example of input bullet point:
+#     - **Subhasish Mitra**: Generalized qed pre-silicon verification framework S Mitra, C BARRETT, CJ Trippel, S Chattopadhyay - US Patent App. 18/541722, 2025 Abstract Systems and methods of verifying a hardware processing
+#     The output should be:
+#     - **Subhasish Mitra** (patent): Generalized qed pre-silicon verification framework
+
+#     Example of input bullet point:
+#     - **Luca Benini***: RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects P Iff, B Bruggmann, B Morel, M Besta, L Benini… - Proceedings of the 22nd …, 2025
+#     The output should be:
+#     - **Luca Benini*** (paper): RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects
+
+#     Return the modified text without any comment or request from you.
+#     {scholar_text_before_llm}
+#     """
+#     scholar_summary = ollama(prompt=prompt, model=model)
+
+#     # add header
+#     scholar_summary = '## Google Scholar\n' + scholar_summary
+
+#     # space at the end
+#     scholar_summary += '\n\n'
+
+#     # debug
+#     if debug and verbose:
+#         print('Scholar: [DEBUG] scholar_text_before_llm')
+#         print(scholar_text_before_llm)
+#         print('Scholar: [DEBUG] scholar_summary')
+#         print(scholar_summary)
+
+#     # return
+#     return scholar_summary
 
 
 # ================================================================================
@@ -135,7 +235,9 @@ def ollama(
     # - run `ollama serve` first in the terminal
 
     # call ollama
-    response = requests.post('http://localhost:11434/api/generate', json={'model': model, 'prompt': prompt})
+    response = requests.post(
+        'http://localhost:11434/api/generate', json={'model': model, 'prompt': prompt}
+    )
 
     # Parse NDJSON (newline-delimited JSON)
     full_response = ''
@@ -183,7 +285,13 @@ def get_weeks_after(date_str):
         current_end = current_start + timedelta(days=6)
         start_date = current_start.strftime(format)
         end_date = current_end.strftime(format)
-        weeks.append({'start_date': start_date, 'end_date': end_date, 'range_date': f'{start_date}_{end_date}'})
+        weeks.append(
+            {
+                'start_date': start_date,
+                'end_date': end_date,
+                'range_date': f'{start_date}_{end_date}',
+            }
+        )
         current_start += timedelta(days=7)
 
     return weeks
@@ -330,7 +438,9 @@ def update_markdown_homepage(
     # get list of markdown editions
     folder = Path(output_folder)
     files = [f.name for f in folder.iterdir() if f.is_file()]
-    files = [f for f in files if not (f == markdown_file or '_last_week.md' in f or f == '.gitignore')]
+    files = [
+        f for f in files if not (f == markdown_file or '_last_week.md' in f or f == '.gitignore')
+    ]
 
     # sort the list
     files = sorted(files, reverse=True)

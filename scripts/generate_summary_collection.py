@@ -21,7 +21,11 @@ if __name__ == '__main__':
     weeks = get_weeks_after(reference_str)
 
     # select only the weeks of the editions that have not been generated yet
-    weeks = [dates for dates in weeks if not (Path(output_folder) / get_markdown_edition(markdown_file, dates)).exists()]
+    weeks = [
+        dates
+        for dates in weeks
+        if not (Path(output_folder) / get_markdown_edition(markdown_file, dates)).exists()
+    ]
 
     # generate editions
     for dates in weeks:

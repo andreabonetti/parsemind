@@ -19,7 +19,7 @@ authors = [
 dependencies = []
 
 [tool.ruff]
-line-length = 250
+line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
