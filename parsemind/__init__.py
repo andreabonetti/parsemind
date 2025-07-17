@@ -575,14 +575,7 @@ def get_summary(
         print(summary)
 
 
-def update_markdown_homepage(
-    output_folder='output',
-    markdown_file='parsemind.md',
-):
-    """Update markdown homepage"""
-    # Create folder if it doesn't exist
-    os.makedirs(output_folder, exist_ok=True)
-
+def get_list_of_markdown_editions(output_folder='output', markdown_file='parsemind.md'):
     # get list of markdown editions
     folder = Path(output_folder)
     files = [f.name for f in folder.iterdir() if f.is_file()]
@@ -592,6 +585,19 @@ def update_markdown_homepage(
 
     # sort the list
     files = sorted(files, reverse=True)
+    return files
+
+
+def update_markdown_homepage(
+    output_folder='output',
+    markdown_file='parsemind.md',
+):
+    """Update markdown homepage"""
+    # Create folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+
+    # get list of markdown editions
+    files = get_list_of_markdown_editions(output_folder=output_folder, markdown_file=markdown_file)
 
     def format_date_range(date_str: str) -> str:
         # Input example: 'parsemind_2025-07-07_2025-07-13'
@@ -617,3 +623,21 @@ def update_markdown_homepage(
     markdown_path = os.path.join(output_folder, markdown_file)
     with open(markdown_path, 'w') as f:
         f.write(content)
+
+
+def delete_last_markdown_edition(
+    output_folder='output',
+    markdown_file='parsemind.md',
+):
+    """Delete last markdown edition"""
+    # Get list of markdown editions
+    files = get_list_of_markdown_editions(output_folder=output_folder, markdown_file=markdown_file)
+
+    if not files:
+        raise Exception('No markdown editions found to delete.')
+
+    # Delete last markdown edition
+    last_file = files[0]
+    last_file_path = os.path.join(output_folder, last_file)
+    os.remove(last_file_path)
+    print(f'Deleted last markdown edition: {last_file}')

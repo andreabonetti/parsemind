@@ -37,3 +37,6 @@ requirements:
 
 clean:
 	rm output/*.md
+
+delete_last_markdown_edition:
+	python scripts/delete_last_markdown_edition.py
