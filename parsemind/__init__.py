@@ -62,6 +62,65 @@ def send_email(service, sender, to, subject, body):
     return sent
 
 
+def get_labels(service):
+    """Get a list of labels in the user's mailbox."""
+    try:
+        results = service.users().labels().list(userId='me').execute()
+        labels = results.get('labels', [])
+        return labels
+    except HttpError as error:
+        print(f'An error occurred: {error}')
+        return None
+
+
+def get_label_id_by_name(service, label_name):
+    """Get the label ID by label name."""
+    labels = get_labels(service)
+    if labels:
+        for label in labels:
+            if label['name'] == label_name:
+                return label['id']
+    return None
+
+
+# TODO: not used
+# def get_msg_by_date_range(
+#     service,
+#     label_name: str,  # 'scholar'
+#     start_date,  # "2025-01-01"
+#     end_date,  # "2025-01-07"
+#     maxResults=500,  # apparently, 500 is the maximum allowed by Gmail API
+# ):
+#     query = f'after:{start_date} before:{end_date}'
+#     label_id = get_label_id_by_name(service, label_name)
+#     result = service.users().messages().list(userId='me', labelIds=[label_id], maxResults=maxResults, q=query).execute()
+#     messages = result.get('messages', [])
+#     print(messages)
+
+
+def get_scholar_text(msg):
+    """Get text of Google Scholar email"""
+    headers = {h['name']: h['value'] for h in msg['payload']['headers']}
+    subject = headers.get('Subject', '(No Subject)')
+    # sender = headers.get("From", "(No Sender)")
+    snippet = msg.get('snippet', '')
+
+    # postprocessing of subject
+    subject_improved = copy.deepcopy(subject)
+    subject_improved = subject_improved.replace(' - new articles', '')  # english
+    subject_improved = subject_improved.replace(' - nuovi articoli', '')  # italian
+    subject_improved = subject_improved.replace(' కర్రి రమేష్', '')  # keeping only English script of Ramesh Kerri
+
+    # postprocessing of snippet
+    snippet_improved = copy.deepcopy(snippet)
+    snippet_improved = snippet_improved.replace('[PDF]', '')
+    snippet_improved = snippet_improved.replace('[HTML]', '')
+    snippet_improved = snippet_improved.replace('POSTER:', '')
+    snippet_improved = snippet_improved.lstrip()
+
+    return subject_improved, snippet_improved
+
+
 # ================================================================================
 # ollama
 # ================================================================================
@@ -94,63 +153,6 @@ def ollama(
 # ================================================================================
 # parsemind
 # ================================================================================
-
-
-def get_labels(service):
-    """Get a list of labels in the user's mailbox."""
-    try:
-        results = service.users().labels().list(userId='me').execute()
-        labels = results.get('labels', [])
-        return labels
-    except HttpError as error:
-        print(f'An error occurred: {error}')
-        return None
-
-
-def get_label_id_by_name(service, label_name):
-    """Get the label ID by label name."""
-    labels = get_labels(service)
-    if labels:
-        for label in labels:
-            if label['name'] == label_name:
-                return label['id']
-    return None
-
-
-def get_msg_by_date_range(
-    service,
-    label_name: str,  # 'scholar'
-    start_date,  # "2025-01-01"
-    end_date,  # "2025-01-07"
-    maxResults=500,  # apparently, 500 is the maximum allowed by Gmail API
-):
-    query = f'after:{start_date} before:{end_date}'
-    label_id = get_label_id_by_name(service, label_name)
-    result = service.users().messages().list(userId='me', labelIds=[label_id], maxResults=maxResults, q=query).execute()
-    messages = result.get('messages', [])
-    print(messages)
-
-
-def get_scholar_text(msg):
-    headers = {h['name']: h['value'] for h in msg['payload']['headers']}
-    subject = headers.get('Subject', '(No Subject)')
-    # sender = headers.get("From", "(No Sender)")
-    snippet = msg.get('snippet', '')
-
-    # postprocessing of subject
-    subject_improved = copy.deepcopy(subject)
-    subject_improved = subject_improved.replace(' - new articles', '')  # english
-    subject_improved = subject_improved.replace(' - nuovi articoli', '')  # italian
-    subject_improved = subject_improved.replace(' కర్రి రమేష్', '')  # keeping only English script of Ramesh Kerri
-
-    # postprocessing of snippet
-    snippet_improved = copy.deepcopy(snippet)
-    snippet_improved = snippet_improved.replace('[PDF]', '')
-    snippet_improved = snippet_improved.replace('[HTML]', '')
-    snippet_improved = snippet_improved.replace('POSTER:', '')
-    snippet_improved = snippet_improved.lstrip()
-
-    return subject_improved, snippet_improved
 
 
 def get_today_and_week_ago():
