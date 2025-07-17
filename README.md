@@ -1,5 +1,11 @@
 # ParseMind
+
 ParseMind is an LLM-powered tool that parses and summarizes newsletters into clean, concise insights.
+
+![alt text](pics/chris-blonk-swd3FBSEA4Q-unsplash.jpg)
+
+Photo by [Chris Blonk](https://unsplash.com/@chriskristiansen?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash) on [Unsplash](https://unsplash.com/photos/six-black-wooden-frames-swd3FBSEA4Q?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash)
+      
 
 ## Install
 
@@ -11,7 +17,7 @@ make install
 ```
 
 Generate the authorization token:
-```
+```shell
 python scripts/authorize_and_save_token.py
 ```
 

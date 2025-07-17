@@ -36,7 +36,7 @@ requirements:
 	pip freeze > requirements.txt
 
 clean:
-	rm output/*.md
+	rm -f .DS_Store
 
 generate_summary_collection:
 	python scripts/generate_summary_collection.py
