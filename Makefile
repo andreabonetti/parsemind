@@ -11,6 +11,10 @@ pytest:
 
 test: pytest
 
+coverage:
+	coverage run -m pytest .
+	coverage report examples/*.py tests/*.py parsemind/*.py
+
 # ----- lint -----
 
 ruff:
@@ -37,6 +41,7 @@ requirements:
 
 clean:
 	rm -f .DS_Store
+	rm -f .coverage
 
 generate_summary_collection:
 	python scripts/generate_summary_collection.py
