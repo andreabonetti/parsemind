@@ -299,12 +299,13 @@ def get_messages_from_label_and_sender_in_date_range(service, label: str, sender
     # space at the end
     scholar_summary += '\n\n'
 
+    # TODO: not sure if this is needed
     # do_debug
-    if do_debug and verbose:
-        print('Scholar: [DEBUG] scholar_text_before_llm')
-        print(scholar_text_before_llm)
-        print('Scholar: [DEBUG] scholar_summary')
-        print(scholar_summary)
+    # if do_debug and verbose:
+    #     print('Scholar: [DEBUG] scholar_text_before_llm')
+    #     print(scholar_text_before_llm)
+    #     print('Scholar: [DEBUG] scholar_summary')
+    #     print(scholar_summary)
 
     # return
     return scholar_summary
