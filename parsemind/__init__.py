@@ -91,21 +91,6 @@ def get_label_id_by_name(service, label_name):
     return None
 
 
-# TODO: not used
-# def get_msg_by_date_range(
-#     service,
-#     label_name: str,  # 'scholar'
-#     start_date,  # "2025-01-01"
-#     end_date,  # "2025-01-07"
-#     maxResults=500,  # apparently, 500 is the maximum allowed by Gmail API
-# ):
-#     query = f'after:{start_date} before:{end_date}'
-#     label_id = get_label_id_by_name(service, label_name)
-#     result = service.users().messages().list(userId='me', labelIds=[label_id], maxResults=maxResults, q=query).execute()
-#     messages = result.get('messages', [])
-#     print(messages)
-
-
 def get_scholar_text(msg):
     """Get text of Google Scholar email"""
     headers = {h['name']: h['value'] for h in msg['payload']['headers']}
@@ -131,7 +116,6 @@ def get_scholar_text(msg):
     return subject_improved, snippet_improved
 
 
-
 def get_messages_from_query(
     service,
     q: str,
@@ -151,19 +135,18 @@ def get_messages_from_query(
     )
 
     messages = result.get('messages', [])
-    
+
     if not messages:
-        raise Exception("No messages found.")
-    
+        raise Exception('No messages found.')
+
     content_list = []
     for message in messages:
         msg_id = message['id']
         msg = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
         content = get_content_from_message(msg)
         content_list.append(content)
-    
-    return content_list
 
+    return content_list
 
 
 def get_content_from_message(msg):
@@ -173,7 +156,7 @@ def get_content_from_message(msg):
     subject = headers.get('Subject', '(No Subject)')
 
     # get sender
-    sender = headers.get("From", "(No Sender)")
+    sender = headers.get('From', '(No Sender)')
 
     # get snippet
     snippet = msg.get('snippet', '')
@@ -338,26 +321,29 @@ def get_scholar_summary(service, dates, verbose=False, do_debug=False):
     else:
         model = 'gemma3:12b'
 
-    prompt = f"""
-    The text below is a bullet point list.
-    Each bullet point reports the reference author in bold, the title, the complete list of authors, and additional information.
-    Remove the complete list of authors and the additional information **after** the title of each bullet point.
-    Keep the reference author and the title, as they are now.
-    Between the author and the title, write '(patent)' if the bullet point is a patent or '(paper)' if the bullet point is a paper.
+    prompt = '\n'.join(
+        [
+            'The text below is a bullet point list.',
+            'Each bullet point reports the reference author in bold, the title, the complete list of authors, and additional information.',  # noqa: E501
+            'Remove the complete list of authors and the additional information **after** the title of each bullet point.',  # noqa: E501
+            'Keep the reference author and the title, as they are now.',
+            "Between the author and the title, write '(patent)' if the bullet point is a patent or '(paper)' if the bullet point is a paper.",  # noqa: E501
+            '',
+            'Example of input bullet point:',
+            '- **Subhasish Mitra**: Generalized qed pre-silicon verification framework S Mitra, C BARRETT, CJ Trippel, S Chattopadhyay - US Patent App. 18/541722, 2025 Abstract Systems and methods of verifying a hardware processing',  # noqa: E501
+            'The output should be:',
+            '- **Subhasish Mitra** (patent): Generalized qed pre-silicon verification framework',  # noqa: E501
+            '',
+            'Example of input bullet point:',
+            '- **Luca Benini***: RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects P Iff, B Bruggmann, B Morel, M Besta, L Benini… - Proceedings of the 22nd …, 2025',  # noqa: E501
+            'The output should be:',
+            '- **Luca Benini*** (paper): RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects',  # noqa: E501
+            '',
+            'Return the modified text without any comment or request from you.',
+            f'{scholar_text_before_llm}',
+        ]
+    )
 
-    Example of input bullet point:
-    - **Subhasish Mitra**: Generalized qed pre-silicon verification framework S Mitra, C BARRETT, CJ Trippel, S Chattopadhyay - US Patent App. 18/541722, 2025 Abstract Systems and methods of verifying a hardware processing
-    The output should be:
-    - **Subhasish Mitra** (patent): Generalized qed pre-silicon verification framework
-
-    Example of input bullet point:
-    - **Luca Benini***: RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects P Iff, B Bruggmann, B Morel, M Besta, L Benini… - Proceedings of the 22nd …, 2025
-    The output should be:
-    - **Luca Benini*** (paper): RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects
-
-    Return the modified text without any comment or request from you.
-    {scholar_text_before_llm}
-    """
     scholar_summary = ollama(prompt=prompt, model=model)
 
     # add header
@@ -404,18 +390,20 @@ def get_summary(
 
     # google scholar
     if scholar:
-        summary += get_scholar_summary(service=service, dates=dates, verbose=verbose, do_debug=do_debug)
+        summary += get_scholar_summary(
+            service=service, dates=dates, verbose=verbose, do_debug=do_debug
+        )
 
     # semi-mags
     if semi_mags:
         # TODO: consider moving this to a separate function
-        
+
         # query
         q = f"""
         from:newsletter@semi-mags.com
         label:newsletters
-        after:{dates["start_date"]}
-        before:{dates["end_date"]}
+        after:{dates['start_date']}
+        before:{dates['end_date']}
         """
 
         # get messages from query
@@ -427,7 +415,7 @@ def get_summary(
         # get all text
         text = ''
         for content in content_list:
-            text += f"{content['plain_text_body']}\n"
+            text += f'{content["plain_text_body"]}\n'
 
         # llm parsing with ollama
         if verbose:
@@ -439,7 +427,7 @@ def get_summary(
             model = 'gemma3:1b'
         else:
             model = 'gemma3:12b'
-        
+
         prompt = f"""
         Summarize the content of the text below as a bullet point list.
         Provide me only with your summary, avoid any comment.
@@ -455,11 +443,9 @@ def get_summary(
 
         # space at the end
         summary_to_add += '\n\n'
-        
+
         # add to summary
         summary += summary_to_add
-
-
 
     # markdown
     if markdown:
@@ -506,7 +492,15 @@ def update_markdown_homepage(
         end_date = datetime.strptime(parts[2], '%Y-%m-%d')
 
         # Format: '7 July 2025 - 13 July 2025'
-        return f'{start_date.day} {start_date.strftime("%B %Y")} - {end_date.day} {end_date.strftime("%B %Y")}'
+        file_text = ''.join(
+            [
+                f'{start_date.day} {start_date.strftime("%B %Y")}',
+                ' - ',
+                f'{end_date.day} {end_date.strftime("%B %Y")}',
+            ]
+        )
+
+        return file_text
 
     # content
     content = '# ParseMind\n'

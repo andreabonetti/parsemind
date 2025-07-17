@@ -44,7 +44,7 @@ if __name__ == '__main__':
             markdown_file=markdown_edition,  # edition,
             # misc
             verbose=True,
-            do_debug=False
+            do_debug=False,
         )
 
     # update markdown homepage

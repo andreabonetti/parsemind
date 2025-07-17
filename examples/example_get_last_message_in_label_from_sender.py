@@ -1,13 +1,11 @@
-from parsemind import get_content_from_message
-from parsemind import call_gmail_api, get_label_id_by_name
-from parsemind import get_messages_from_query
+from parsemind import call_gmail_api, get_messages_from_query
 
 
 def main():
     service = call_gmail_api()
 
     # query
-    q = f"""
+    q = """
     from:newsletter@semi-mags.com
     label:newsletters
     after:2025-07-01
@@ -24,14 +22,14 @@ def main():
 
     # print
     my_text = '\n'
-    my_text += f"subject: {content['subject']}\n\n"
-    my_text += f"sender: {content['sender']}\n\n"
-    my_text += f"snippet: {content['snippet']}\n\n"
-    my_text += f"plain_text_body: {content['plain_text_body']}\n\n"
+    my_text += f'subject: {content["subject"]}\n\n'
+    my_text += f'sender: {content["sender"]}\n\n'
+    my_text += f'snippet: {content["snippet"]}\n\n'
+    my_text += f'plain_text_body: {content["plain_text_body"]}\n\n'
     print(my_text)
 
-    return True # for testing
+    return True  # for testing
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
