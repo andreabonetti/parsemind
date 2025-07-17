@@ -27,7 +27,6 @@ lint: ruff mypy
 token:
 	python examples/example_get_labels.py
 
-
 requirements:
 	pip freeze > requirements.txt
 
