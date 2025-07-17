@@ -210,107 +210,6 @@ def get_content_from_message(msg):
     return content
 
 
-def get_messages_from_label_and_sender_in_date_range(service, label: str, sender: str, dates, verbose=False, do_debug=False):
-    """
-    Get messages from Gmail label within date range
-
-    Examples:
-        label = 'newsletter'
-        sender = 'cool@news.com'
-    """
-    # get label id
-    label_id = get_label_id_by_name(service, label)
-
-    # gmail query based on data range
-    q = f'after:{dates["start_date"]} before:{dates["end_date"]} from:{sender}'
-
-    # get messages based on label and query
-    if verbose:
-        print('Get messages...')
-    result = (
-        service.users()
-        .messages()
-        .list(
-            userId='me',
-            labelIds=[label_id], # label
-            q=q, # query
-        )
-        .execute()
-    )
-    messages = result.get('messages', [])
-
-    # get subjects and snippets
-    if verbose:
-        print('Get subjects and snippets...')
-    content = []
-    # for each message
-    for message in messages:
-        # get message
-        msg_id = message['id']
-        msg = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
-
-        # get subject and snippet
-        [subject_improved, snippet_improved] = get_scholar_text(msg)
-        scholar.append([subject_improved, snippet_improved])
-
-    # scholar text
-    scholar_text = ''
-    for s in scholar:
-        scholar_text += f'- **{s[0]}**: {s[1]}\n'
-
-    scholar_text_before_llm = copy.deepcopy(scholar_text)
-
-    # llm parsing with ollama
-    if verbose:
-        print('Scholar: LLM parsing with ollama...')
-
-    if do_debug:
-        if verbose:
-            print('Scholar: [DEBUG] Running with small LLM model')
-        model = 'gemma3:1b'
-    else:
-        model = 'gemma3:12b'
-
-    prompt = f"""
-    The text below is a bullet point list.
-    Each bullet point reports the reference author in bold, the title, the complete list of authors, and additional information.
-    Remove the complete list of authors and the additional information **after** the title of each bullet point.
-    Keep the reference author and the title, as they are now.
-    Between the author and the title, write '(patent)' if the bullet point is a patent or '(paper)' if the bullet point is a paper.
-
-    Example of input bullet point:
-    - **Subhasish Mitra**: Generalized qed pre-silicon verification framework S Mitra, C BARRETT, CJ Trippel, S Chattopadhyay - US Patent App. 18/541722, 2025 Abstract Systems and methods of verifying a hardware processing
-    The output should be:
-    - **Subhasish Mitra** (patent): Generalized qed pre-silicon verification framework
-
-    Example of input bullet point:
-    - **Luca Benini***: RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects P Iff, B Bruggmann, B Morel, M Besta, L Benini… - Proceedings of the 22nd …, 2025
-    The output should be:
-    - **Luca Benini*** (paper): RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects
-
-    Return the modified text without any comment or request from you.
-    {scholar_text_before_llm}
-    """
-    scholar_summary = ollama(prompt=prompt, model=model)
-
-    # add header
-    scholar_summary = '## Google Scholar\n' + scholar_summary
-
-    # space at the end
-    scholar_summary += '\n\n'
-
-    # TODO: not sure if this is needed
-    # do_debug
-    # if do_debug and verbose:
-    #     print('Scholar: [DEBUG] scholar_text_before_llm')
-    #     print(scholar_text_before_llm)
-    #     print('Scholar: [DEBUG] scholar_summary')
-    #     print(scholar_summary)
-
-    # return
-    return scholar_summary
-
-
 # ================================================================================
 # ollama
 # ================================================================================
@@ -467,12 +366,13 @@ def get_scholar_summary(service, dates, verbose=False, do_debug=False):
     # space at the end
     scholar_summary += '\n\n'
 
+    # TODO: not sure if this is needed
     # do_debug
-    if do_debug and verbose:
-        print('Scholar: [DEBUG] scholar_text_before_llm')
-        print(scholar_text_before_llm)
-        print('Scholar: [DEBUG] scholar_summary')
-        print(scholar_summary)
+    # if do_debug and verbose:
+    #     print('Scholar: [DEBUG] scholar_text_before_llm')
+    #     print(scholar_text_before_llm)
+    #     print('Scholar: [DEBUG] scholar_summary')
+    #     print(scholar_summary)
 
     # return
     return scholar_summary
