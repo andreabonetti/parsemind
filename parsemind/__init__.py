@@ -340,7 +340,7 @@ def update_markdown_homepage(
         end_date = datetime.strptime(parts[2], '%Y-%m-%d')
 
         # Format: '7 July 2025 - 13 July 2025'
-        return f"{start_date.day} {start_date.strftime('%B %Y')} - {end_date.day} {end_date.strftime('%B %Y')}"
+        return f'{start_date.day} {start_date.strftime("%B %Y")} - {end_date.day} {end_date.strftime("%B %Y")}'
 
     # content
     content = '# ParseMind\n'
