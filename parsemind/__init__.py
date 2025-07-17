@@ -330,11 +330,28 @@ def update_markdown_homepage(
     files = [f.name for f in folder.iterdir() if f.is_file()]
     files = [f for f in files if not (f == markdown_file or '_last_week.md' in f or f == '.gitignore')]
 
+    # sort the list
+    files = sorted(files, reverse=True)
+
+    def format_date_range(date_str: str) -> str:
+        # Input example: 'parsemind_2025-07-07_2025-07-13'
+        parts = date_str.split('_')
+        start_date = datetime.strptime(parts[1], '%Y-%m-%d')
+        end_date = datetime.strptime(parts[2], '%Y-%m-%d')
+
+        # Format: '7 July 2025 - 13 July 2025'
+        return f"{start_date.day} {start_date.strftime('%B %Y')} - {end_date.day} {end_date.strftime('%B %Y')}"
+
     # content
     content = '# ParseMind\n'
     for file in files:
-        file_wo_md = file.replace('.md', '')
-        content += f'- [{file_wo_md}]({file})\n'
+        # remove .md extension
+        file_text = file.replace('.md', '')
+
+        # format date range
+        file_text = format_date_range(date_str=file_text)
+
+        content += f'- [{file_text}]({file})\n'
 
     # write to file
     markdown_path = os.path.join(output_folder, markdown_file)
