@@ -7,7 +7,11 @@ def main():
     service = call_gmail_api()
 
     # query
-    q = "from:newsletter@semi-mags.com label:newsletters after:2025-07-01"
+    q = f"""
+    from:newsletter@semi-mags.com
+    label:newsletters
+    after:2025-07-01
+    """
 
     # get messages from query
     content_list = get_messages_from_query(
