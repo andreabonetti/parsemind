@@ -35,10 +35,16 @@ if __name__ == '__main__':
         # summary
         get_summary(
             dates=dates,
+            # summaries
             scholar=True,
+            semi_mags=True,
+            # markdown
             markdown=True,
             output_folder=output_folder,
             markdown_file=markdown_edition,  # edition,
+            # misc
+            verbose=True,
+            do_debug=True
         )
 
     # update markdown homepage

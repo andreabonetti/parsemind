@@ -210,7 +210,7 @@ def get_content_from_message(msg):
     return content
 
 
-def get_messages_from_label_and_sender_in_date_range(service, label: str, sender: str, dates, verbose=False, debug=False):
+def get_messages_from_label_and_sender_in_date_range(service, label: str, sender: str, dates, verbose=False, do_debug=False):
     """
     Get messages from Gmail label within date range
 
@@ -264,7 +264,7 @@ def get_messages_from_label_and_sender_in_date_range(service, label: str, sender
     if verbose:
         print('Scholar: LLM parsing with ollama...')
 
-    if debug:
+    if do_debug:
         if verbose:
             print('Scholar: [DEBUG] Running with small LLM model')
         model = 'gemma3:1b'
@@ -299,8 +299,8 @@ def get_messages_from_label_and_sender_in_date_range(service, label: str, sender
     # space at the end
     scholar_summary += '\n\n'
 
-    # debug
-    if debug and verbose:
+    # do_debug
+    if do_debug and verbose:
         print('Scholar: [DEBUG] scholar_text_before_llm')
         print(scholar_text_before_llm)
         print('Scholar: [DEBUG] scholar_summary')
@@ -386,7 +386,7 @@ def get_weeks_after(date_str):
     return weeks
 
 
-def get_scholar_summary(service, dates, verbose=False, debug=False):
+def get_scholar_summary(service, dates, verbose=False, do_debug=False):
     """Generate Google Scholar section of the summary"""
     # select label
     label = 'scholar'
@@ -431,7 +431,7 @@ def get_scholar_summary(service, dates, verbose=False, debug=False):
     if verbose:
         print('Scholar: LLM parsing with ollama...')
 
-    if debug:
+    if do_debug:
         if verbose:
             print('Scholar: [DEBUG] Running with small LLM model')
         model = 'gemma3:1b'
@@ -466,8 +466,8 @@ def get_scholar_summary(service, dates, verbose=False, debug=False):
     # space at the end
     scholar_summary += '\n\n'
 
-    # debug
-    if debug and verbose:
+    # do_debug
+    if do_debug and verbose:
         print('Scholar: [DEBUG] scholar_text_before_llm')
         print(scholar_text_before_llm)
         print('Scholar: [DEBUG] scholar_summary')
@@ -481,6 +481,7 @@ def get_summary(
     dates,
     # summaries
     scholar=True,
+    semi_mags=True,
     # markdown
     markdown=False,  # save summary as markdown
     output_folder='output',
@@ -490,7 +491,7 @@ def get_summary(
     do_print=False,
     # misc
     verbose=False,
-    debug=False,
+    do_debug=False,
 ):
     """Generate the summary of the newsletters"""
     # call gmail api
@@ -499,8 +500,65 @@ def get_summary(
     # summary
     summary = f'# ParseMind: {dates["start_date"]} ~ {dates["end_date"]}\n\n'
     summary += f'[Back to homepage.]({homepage_file})\n'
+
+    # google scholar
     if scholar:
-        summary += get_scholar_summary(service=service, dates=dates, verbose=verbose, debug=debug)
+        summary += get_scholar_summary(service=service, dates=dates, verbose=verbose, do_debug=do_debug)
+
+    # semi-mags
+    if semi_mags:
+        # TODO: consider moving this to a separate function
+        
+        # query
+        q = f"""
+        from:newsletter@semi-mags.com
+        label:newsletters
+        after:{dates["start_date"]}
+        before:{dates["end_date"]}
+        """
+
+        # get messages from query
+        content_list = get_messages_from_query(
+            service=service,
+            q=q,
+        )
+
+        # get all text
+        text = ''
+        for content in content_list:
+            text += f"{content['plain_text_body']}\n"
+
+        # llm parsing with ollama
+        if verbose:
+            print('Semi-Mags: LLM parsing with ollama...')
+
+        if do_debug:
+            if verbose:
+                print('Semi-Mags: [DEBUG] Running with small LLM model')
+            model = 'gemma3:1b'
+        else:
+            model = 'gemma3:12b'
+        
+        prompt = f"""
+        Summarize the content of the text below as a bullet point list.
+        Provide me only with your summary, avoid any comment.
+        First priority to AI and EDA.
+        Second priority to hardware and software.
+        {text}
+        """
+
+        summary_to_add = ollama(prompt=prompt, model=model)
+
+        # add header
+        summary_to_add = '## Semi-Mags\n' + summary_to_add
+
+        # space at the end
+        summary_to_add += '\n\n'
+        
+        # add to summary
+        summary += summary_to_add
+
+
 
     # markdown
     if markdown:
