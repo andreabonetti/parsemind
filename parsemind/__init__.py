@@ -428,13 +428,15 @@ def get_summary(
         else:
             model = 'gemma3:12b'
 
-        prompt = f"""
-        Summarize the content of the text below as a bullet point list.
-        Avoid any introductory or meta language (e.g., 'Here's a summary' or 'The following text summarizes...').
-        Start directly with the content.
-        First Section should be about AI and EDA, second section about hardware and software.
-        {text}
-        """
+        prompt = '\n'.join(
+            [
+                'Summarize the content of the text below as a bullet point list.', # noqa: E501
+                "Avoid any introductory or meta language (e.g., 'Here's a summary' or 'The following text summarizes...').", # noqa: E501
+                'Start directly with the content.', # noqa: E501
+                'First section of the summary should be about AI and EDA, second section about hardware and software.', # noqa: E501
+                f"{text}",
+            ]
+        )
 
         summary_to_add = ollama(prompt=prompt, model=model)
 
