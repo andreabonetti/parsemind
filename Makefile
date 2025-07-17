@@ -38,5 +38,8 @@ requirements:
 clean:
 	rm output/*.md
 
+regenerate_last_markdown_edition: delete_last_markdown_edition
+	python scripts/generate_summary_collection.py
+
 delete_last_markdown_edition:
 	python scripts/delete_last_markdown_edition.py
