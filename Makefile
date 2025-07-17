@@ -1,4 +1,4 @@
-.PHONY: all test pytest lint ruff clean requirements
+.PHONY: all test pytest lint ruff clean requirements token
 
 # ----- all -----
 
@@ -23,6 +23,10 @@ mypy:
 lint: ruff mypy
 
 # ----- misc -----
+
+token:
+	python examples/example_get_labels.py
+
 
 requirements:
 	pip freeze > requirements.txt
