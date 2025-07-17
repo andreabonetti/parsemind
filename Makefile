@@ -26,6 +26,7 @@ lint: ruff mypy
 
 install:
 	pip install --upgrade pip
+	pip install requirements.txt
 	pip install -e .
 
 token:
