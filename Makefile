@@ -24,6 +24,10 @@ lint: ruff mypy
 
 # ----- misc -----
 
+install:
+	pip install --upgrade pip
+	pip install -e .
+
 token:
 	python examples/example_get_labels.py
 
