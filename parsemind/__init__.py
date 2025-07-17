@@ -430,9 +430,9 @@ def get_summary(
 
         prompt = f"""
         Summarize the content of the text below as a bullet point list.
-        Provide me only with your summary, avoid any comment.
-        First priority to AI and EDA.
-        Second priority to hardware and software.
+        Avoid any introductory or meta language (e.g., 'Here's a summary' or 'The following text summarizes...').
+        Start directly with the content.
+        First Section should be about AI and EDA, second section about hardware and software.
         {text}
         """
 
