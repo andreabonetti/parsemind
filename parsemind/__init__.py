@@ -131,94 +131,183 @@ def get_scholar_text(msg):
     return subject_improved, snippet_improved
 
 
-# def get_messages_from_label_in_date_range(service, label: str, dates, verbose=False, debug=False):
-#     """Get messages from Gmail label within date range"""
-#     # select label
-#     label_id = get_label_id_by_name(service, label)
 
-#     # gmail query
-#     q = f'after:{dates["start_date"]} before:{dates["end_date"]}'
+def get_messages_from_query(
+    service,
+    q: str,
+) -> list:
+    """Get messages from Gmail based on query"""
 
-#     # get messages
-#     if verbose:
-#         print('Scholar: Get messages...')
-#     result = (
-#         service.users()
-#         .messages()
-#         .list(
-#             userId='me',
-#             labelIds=[label_id],
-#             q=q,
-#         )
-#         .execute()
-#     )
-#     messages = result.get('messages', [])
+    # get messages based on query
+    result = (
+        service.users()
+        .messages()
+        .list(
+            userId='me',
+            # labelIds=[label_id],
+            q=q,
+        )
+        .execute()
+    )
 
-#     # get subjects and snippets
-#     if verbose:
-#         print('Scholar: Get subjects and snippets...')
-#     scholar = []
-#     for message in messages:
-#         msg_id = message['id']
-#         msg = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
-#         [subject_improved, snippet_improved] = get_scholar_text(msg)
-#         scholar.append([subject_improved, snippet_improved])
+    messages = result.get('messages', [])
+    
+    if not messages:
+        raise Exception("No messages found.")
+    
+    content_list = []
+    for message in messages:
+        msg_id = message['id']
+        msg = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
+        content = get_content_from_message(msg)
+        content_list.append(content)
+    
+    return content_list
 
-#     # scholar text
-#     scholar_text = ''
-#     for s in scholar:
-#         scholar_text += f'- **{s[0]}**: {s[1]}\n'
 
-#     scholar_text_before_llm = copy.deepcopy(scholar_text)
 
-#     # llm parsing with ollama
-#     if verbose:
-#         print('Scholar: LLM parsing with ollama...')
+def get_content_from_message(msg):
+    """Get text from Gmail message (email)"""
+    # get subject
+    headers = {h['name']: h['value'] for h in msg['payload']['headers']}
+    subject = headers.get('Subject', '(No Subject)')
 
-#     if debug:
-#         if verbose:
-#             print('Scholar: [DEBUG] Running with small LLM model')
-#         model = 'gemma3:1b'
-#     else:
-#         model = 'gemma3:12b'
+    # get sender
+    sender = headers.get("From", "(No Sender)")
 
-#     prompt = f"""
-#     The text below is a bullet point list.
-#     Each bullet point reports the reference author in bold, the title, the complete list of authors, and additional information.
-#     Remove the complete list of authors and the additional information **after** the title of each bullet point.
-#     Keep the reference author and the title, as they are now.
-#     Between the author and the title, write '(patent)' if the bullet point is a patent or '(paper)' if the bullet point is a paper.
+    # get snippet
+    snippet = msg.get('snippet', '')
 
-#     Example of input bullet point:
-#     - **Subhasish Mitra**: Generalized qed pre-silicon verification framework S Mitra, C BARRETT, CJ Trippel, S Chattopadhyay - US Patent App. 18/541722, 2025 Abstract Systems and methods of verifying a hardware processing
-#     The output should be:
-#     - **Subhasish Mitra** (patent): Generalized qed pre-silicon verification framework
+    # get payload
+    # Note: 'full' format is used to get the complete message including body
+    # If you need only the text part, you can use 'raw' format and decode
+    # but 'full' gives more structured data
+    # msg = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
+    # If you want to extract the plain text body, you can do it like this:
+    if 'parts' in msg['payload']:
+        # If the message has multiple parts (like text and HTML), we need to find the text part
+        for part in msg['payload']['parts']:
+            if part['mimeType'] == 'text/plain':
+                plain_text_body = part['body']['data']
+                plain_text_body = base64.urlsafe_b64decode(plain_text_body).decode('utf-8')
+                break
+        else:
+            plain_text_body = '(No Plain Text Body Found)'
+    else:
+        # If the message has a single part, we can directly access it
+        plain_text_body = msg['payload']['body']['data']
+        plain_text_body = base64.urlsafe_b64decode(plain_text_body).decode('utf-8')
 
-#     Example of input bullet point:
-#     - **Luca Benini***: RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects P Iff, B Bruggmann, B Morel, M Besta, L Benini… - Proceedings of the 22nd …, 2025
-#     The output should be:
-#     - **Luca Benini*** (paper): RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects
+    # pack this into a dictionary
+    content = {
+        'headers': headers,
+        'subject': subject,
+        'sender': sender,
+        'snippet': snippet,
+        'plain_text_body': plain_text_body,
+    }
 
-#     Return the modified text without any comment or request from you.
-#     {scholar_text_before_llm}
-#     """
-#     scholar_summary = ollama(prompt=prompt, model=model)
+    return content
 
-#     # add header
-#     scholar_summary = '## Google Scholar\n' + scholar_summary
 
-#     # space at the end
-#     scholar_summary += '\n\n'
+def get_messages_from_label_and_sender_in_date_range(service, label: str, sender: str, dates, verbose=False, debug=False):
+    """
+    Get messages from Gmail label within date range
 
-#     # debug
-#     if debug and verbose:
-#         print('Scholar: [DEBUG] scholar_text_before_llm')
-#         print(scholar_text_before_llm)
-#         print('Scholar: [DEBUG] scholar_summary')
-#         print(scholar_summary)
+    Examples:
+        label = 'newsletter'
+        sender = 'cool@news.com'
+    """
+    # get label id
+    label_id = get_label_id_by_name(service, label)
 
-#     # return
-#     return scholar_summary
+    # gmail query based on data range
+    q = f'after:{dates["start_date"]} before:{dates["end_date"]} from:{sender}'
+
+    # get messages based on label and query
+    if verbose:
+        print('Get messages...')
+    result = (
+        service.users()
+        .messages()
+        .list(
+            userId='me',
+            labelIds=[label_id], # label
+            q=q, # query
+        )
+        .execute()
+    )
+    messages = result.get('messages', [])
+
+    # get subjects and snippets
+    if verbose:
+        print('Get subjects and snippets...')
+    content = []
+    # for each message
+    for message in messages:
+        # get message
+        msg_id = message['id']
+        msg = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
+
+        # get subject and snippet
+        [subject_improved, snippet_improved] = get_scholar_text(msg)
+        scholar.append([subject_improved, snippet_improved])
+
+    # scholar text
+    scholar_text = ''
+    for s in scholar:
+        scholar_text += f'- **{s[0]}**: {s[1]}\n'
+
+    scholar_text_before_llm = copy.deepcopy(scholar_text)
+
+    # llm parsing with ollama
+    if verbose:
+        print('Scholar: LLM parsing with ollama...')
+
+    if debug:
+        if verbose:
+            print('Scholar: [DEBUG] Running with small LLM model')
+        model = 'gemma3:1b'
+    else:
+        model = 'gemma3:12b'
+
+    prompt = f"""
+    The text below is a bullet point list.
+    Each bullet point reports the reference author in bold, the title, the complete list of authors, and additional information.
+    Remove the complete list of authors and the additional information **after** the title of each bullet point.
+    Keep the reference author and the title, as they are now.
+    Between the author and the title, write '(patent)' if the bullet point is a patent or '(paper)' if the bullet point is a paper.
+
+    Example of input bullet point:
+    - **Subhasish Mitra**: Generalized qed pre-silicon verification framework S Mitra, C BARRETT, CJ Trippel, S Chattopadhyay - US Patent App. 18/541722, 2025 Abstract Systems and methods of verifying a hardware processing
+    The output should be:
+    - **Subhasish Mitra** (patent): Generalized qed pre-silicon verification framework
+
+    Example of input bullet point:
+    - **Luca Benini***: RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects P Iff, B Bruggmann, B Morel, M Besta, L Benini… - Proceedings of the 22nd …, 2025
+    The output should be:
+    - **Luca Benini*** (paper): RapidChiplet: A Toolchain for Rapid Design Space Exploration of Inter-Chiplet Interconnects
+
+    Return the modified text without any comment or request from you.
+    {scholar_text_before_llm}
+    """
+    scholar_summary = ollama(prompt=prompt, model=model)
+
+    # add header
+    scholar_summary = '## Google Scholar\n' + scholar_summary
+
+    # space at the end
+    scholar_summary += '\n\n'
+
+    # debug
+    if debug and verbose:
+        print('Scholar: [DEBUG] scholar_text_before_llm')
+        print(scholar_text_before_llm)
+        print('Scholar: [DEBUG] scholar_summary')
+        print(scholar_summary)
+
+    # return
+    return scholar_summary
 
 
 # ================================================================================
