@@ -3,9 +3,18 @@ ParseMind is an LLM-powered tool that parses and summarizes newsletters into cle
 
 ## Install
 
+Download `credentials.json` to access the Gmail API following [these instructions](https://developers.google.com/workspace/gmail/api/quickstart/python) and place it under the folder `credentials`.
+
+pip install `parsemind`:
 ```shell
-pip install -e .
+make install
 ```
+
+Generate the authorization token:
+```
+python scripts/authorize_and_save_token.py
+```
+
 
 ## Requirements
 

@@ -17,7 +17,7 @@ from googleapiclient.errors import HttpError  # type: ignore
 # ================================================================================
 
 
-def authorize_and_save_token(client_secret_path='credentials/client_secret.json', token_path='credentials/token.json'):
+def authorize_and_save_token(client_secret_path='credentials/credentials.json', token_path='credentials/token.json'):
     """Creates token.json"""
     # Scopes: read and send
     SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
