@@ -26,6 +26,11 @@ python scripts/authorize_and_save_token.py
 
 You need to have [ollama](https://ollama.com/) installed.
 
+For MacOS:
+```
+brew install ollama
+```
+
 ## How to use it
 
 Start ollama:
