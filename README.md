@@ -31,6 +31,8 @@ For MacOS:
 brew install ollama
 ```
 
+Also, you need to have downloaded `Ollama.app` from [here](https://ollama.com/download).
+
 ## How to use it
 
 Start ollama:
